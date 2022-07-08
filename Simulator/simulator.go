@@ -42,7 +42,6 @@ func (asrs *ASRS) request_alarm_mcs() {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
-		// fmt.Println(alarm_data.AsrsID, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -50,15 +49,13 @@ func (asrs *ASRS) request_alarm_mcs() {
 	if resp.StatusCode == http.StatusOK {
 		_, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			// fmt.Println(err)
 			return
 		}
-		// fmt.Println(string(body))
 	}
 
 }
 
-func (asrs *ASRS) request_mcs(mission_status Models.MissionStatus) {
+func (asrs *ASRS) request_mcs(mission_status Models.Mission) {
 	client := &http.Client{}
 	stauts_JSON, _ := json.Marshal(mission_status)
 	req, _ := http.NewRequest("POST", "http://127.0.0.1:8000/api/rs/device/mission/status", bytes.NewBuffer(stauts_JSON))
@@ -66,7 +63,6 @@ func (asrs *ASRS) request_mcs(mission_status Models.MissionStatus) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
-		// fmt.Println(mission_status.MissionID, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -74,41 +70,29 @@ func (asrs *ASRS) request_mcs(mission_status Models.MissionStatus) {
 	if resp.StatusCode == http.StatusOK {
 		_, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			// fmt.Println(err)
 			return
 		}
-		// fmt.Println(string(body))
 	}
-	// fmt.Println(mission_status)
 }
 
 func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 	asrs.Status = "RUN"
 	asrs.mux.Lock()
-	mission_status := Models.MissionStatus{
-		MissionID:  mission.MissionID,
-		Sourceport: mission.Sourceport,
-		Destport:   mission.Destport,
-		CarrierID:  mission.CarrierID,
-		Priority:   mission.CarrierID,
-		Quantity:   mission.Quantity,
-		AsrsID:     mission.AsrsID,
-	}
 	for {
 		rand.Seed(time.Now().UnixNano())
 		randomNum := Util.Random(1, 5)
 		switch randomNum {
 		case 1:
-			mission_status.Status = 1
+			mission.Status = 1
 		case 2:
-			mission_status.Status = 2
+			mission.Status = 2
 		case 3:
-			mission_status.Status = 3
+			mission.Status = 3
 		case 4:
-			mission_status.Status = 4
+			mission.Status = 4
 		}
-		asrs.request_mcs(mission_status)
-		if mission_status.Status == 3 {
+		asrs.request_mcs(mission)
+		if mission.Status == 3 {
 			asrs.Status = "IDLE"
 			asrs.mux.Unlock()
 			return
@@ -116,11 +100,6 @@ func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 		time.Sleep(10 * time.Second)
 	}
 }
-
-// func (asrs *ASRS) Init() {
-// 	asrs.Control = make(chan Models.Control)
-// 	asrs.Mission = make([]Models.Mission, 0)
-// }
 
 func (asrs *ASRS) DeleteMission(mission string) {
 	go func() {

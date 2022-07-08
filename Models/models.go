@@ -23,16 +23,6 @@ type Mission struct {
 	Priority   string `json:"Priority"`
 	Quantity   int    `json:"Quantity"`
 	AsrsID     string `json:"AsrsID"`
-}
-
-type MissionStatus struct {
-	MissionID  string `json:"MissionID"`
-	Sourceport string `json:"Sourceport"`
-	Destport   string `json:"Destport"`
-	CarrierID  string `json:"CarrierID"`
-	Priority   string `json:"Priority"`
-	Quantity   int    `json:"Quantity"`
-	AsrsID     string `json:"AsrsID"`
 	Status     int    `json:"Status"`
 }
 
