@@ -15,15 +15,22 @@ type Control struct {
 	MissionID string `json:"MissionID"`
 }
 
+type MissionPrivateControl struct {
+	AsrsID    string `json:"AsrsID"`
+	Type      string `json:"Type"`
+	MissionID string `json:"MissionID"`
+}
+
 type Mission struct {
-	MissionID  string `json:"MissionID"`
-	Sourceport string `json:"Sourceport"`
-	Destport   string `json:"Destport"`
-	CarrierID  string `json:"CarrierID"`
-	Priority   string `json:"Priority"`
-	Quantity   int    `json:"Quantity"`
-	AsrsID     string `json:"AsrsID"`
-	Status     int    `json:"Status"`
+	MissionID  string      `json:"MissionID"`
+	Sourceport string      `json:"Sourceport"`
+	Destport   string      `json:"Destport"`
+	CarrierID  string      `json:"CarrierID"`
+	Priority   string      `json:"Priority"`
+	Quantity   int         `json:"Quantity"`
+	AsrsID     string      `json:"AsrsID"`
+	Status     int         `json:"Status"`
+	Control    chan string `json:"-"`
 }
 
 type ASRS struct {

@@ -3,6 +3,7 @@ package Simulator
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"simulator/Util"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type ASRS struct {
@@ -37,7 +40,7 @@ func (asrs *ASRS) request_alarm_mcs() {
 	}
 	client := &http.Client{}
 	alarm_json, _ := json.Marshal(alarm_data)
-	req, _ := http.NewRequest("POST", "http://127.0.0.1:8000/api/rs/device/alarm", bytes.NewBuffer(alarm_json))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/rs/device/alarm", viper.GetString("MCS")), bytes.NewBuffer(alarm_json))
 	req.SetBasicAuth("admin", "motorcon")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -58,7 +61,7 @@ func (asrs *ASRS) request_alarm_mcs() {
 func (asrs *ASRS) request_mcs(mission_status Models.Mission) {
 	client := &http.Client{}
 	stauts_JSON, _ := json.Marshal(mission_status)
-	req, _ := http.NewRequest("POST", "http://127.0.0.1:8000/api/rs/device/mission/status", bytes.NewBuffer(stauts_JSON))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/rs/device/mission/status", viper.GetString("MCS")), bytes.NewBuffer(stauts_JSON))
 	req.SetBasicAuth("admin", "motorcon")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -81,21 +84,30 @@ func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 	for {
 		rand.Seed(time.Now().UnixNano())
 		randomNum := Util.Random(1, 5)
-		switch randomNum {
-		case 1:
-			mission.Status = 1
-		case 2:
-			mission.Status = 2
-		case 3:
-			mission.Status = 3
-		case 4:
-			mission.Status = 4
-		}
-		asrs.request_mcs(mission)
-		if mission.Status == 3 {
-			asrs.Status = "IDLE"
-			asrs.mux.Unlock()
-			return
+		select {
+		case msg := <-mission.Control:
+			if msg == "RESOLVE" {
+				mission.Status = 2
+			}
+		default:
+			if mission.Status != 4 {
+				switch randomNum {
+				case 1:
+					mission.Status = 1
+				case 2:
+					mission.Status = 2
+				case 3:
+					mission.Status = 3
+				case 4:
+					mission.Status = 4
+				}
+			}
+			asrs.request_mcs(mission)
+			if mission.Status == 3 {
+				asrs.Status = "IDLE"
+				asrs.mux.Unlock()
+				return
+			}
 		}
 		time.Sleep(10 * time.Second)
 	}
@@ -119,6 +131,16 @@ func (asrs *ASRS) AsrsControl(command Models.Control) {
 
 		asrs.Control <- command
 	}()
+}
+
+func (asrs *ASRS) AsrsMissionPrivateControl(Control Models.MissionPrivateControl) bool {
+	for _, v := range asrs.Mission {
+		if v.MissionID == Control.MissionID {
+			v.Control <- Control.Type
+			return true
+		}
+	}
+	return false
 }
 
 func (asrs *ASRS) AsrsMission(mission Models.Mission) {

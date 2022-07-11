@@ -1,9 +1,11 @@
 package Controllers
 
 import (
+	"regexp"
 	"simulator/Global"
 	"simulator/Models"
 	"sort"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +24,12 @@ func Status(c *gin.Context) {
 	}
 
 	sort.SliceStable(status, func(i, j int) bool {
-		return status[i].AsrsID[len(status[i].AsrsID)-1] < status[j].AsrsID[len(status[j].AsrsID)-1]
+		re := regexp.MustCompile("[0-9]+")
+		id1 := re.FindAllString(status[i].AsrsID, -1)[0]
+		id2 := re.FindAllString(status[j].AsrsID, -1)[0]
+		id1_int, _ := strconv.Atoi(id1)
+		id2_int, _ := strconv.Atoi(id2)
+		return id1_int < id2_int
 	})
 
 	c.JSON(200, gin.H{

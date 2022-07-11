@@ -1,0 +1,4 @@
+PORT: 8880
+EQCOUNT: 5
+MCS: http://127.0.0.1:8000
+MODE: debug
