@@ -11,10 +11,10 @@ import (
 )
 
 func Status(c *gin.Context) {
-	var status []Models.ASRS
+	var status []Models.AsrsStatus
 
 	for _, v := range Global.Asrs {
-		status_data := Models.ASRS{
+		status_data := Models.AsrsStatus{
 			AsrsID: v.AsrsID,
 			Type:   v.Type,
 			Status: v.Status,

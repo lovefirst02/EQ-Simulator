@@ -33,7 +33,7 @@ type Mission struct {
 	Control    chan string `json:"-"`
 }
 
-type ASRS struct {
+type AsrsStatus struct {
 	AsrsID string    `json:"AsrsID"`
 	Type   string    `json:"Type"`
 	Status string    `json:"Status"`
@@ -46,8 +46,8 @@ type AsrsAlarm struct {
 	ALMSG  string `json:"ALMSG"`
 }
 
-func (asrs *ASRS) MarshalJSON() ([]byte, error) {
-	type Alias ASRS
+func (asrs *AsrsStatus) MarshalJSON() ([]byte, error) {
+	type Alias AsrsStatus
 	return json.Marshal(&struct {
 		*Alias
 		Time string `json:"Time"`
