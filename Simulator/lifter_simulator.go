@@ -40,7 +40,7 @@ func (lifter *LIFTER) request_alarm_mcs() {
 	}
 	client := &http.Client{}
 	alarm_json, _ := json.Marshal(alarm_data)
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/rs/device/alarm", viper.GetString("MCS")), bytes.NewBuffer(alarm_json))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/lifter/device/alarm", viper.GetString("MCS")), bytes.NewBuffer(alarm_json))
 	req.SetBasicAuth("admin", "motorcon")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -61,7 +61,7 @@ func (lifter *LIFTER) request_alarm_mcs() {
 func (lifter *LIFTER) request_mcs(mission_status Models.LifterMission) {
 	client := &http.Client{}
 	stauts_JSON, _ := json.Marshal(mission_status)
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/rs/device/mission/status", viper.GetString("MCS")), bytes.NewBuffer(stauts_JSON))
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/lifter/device/mission/status", viper.GetString("MCS")), bytes.NewBuffer(stauts_JSON))
 	req.SetBasicAuth("admin", "motorcon")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := client.Do(req)
@@ -207,6 +207,7 @@ func (lifter *LIFTER) LifterSimulator() {
 
 			}
 		}
+		lifter.Time = time.Now()
 		time.Sleep(5 * time.Second)
 	}
 }

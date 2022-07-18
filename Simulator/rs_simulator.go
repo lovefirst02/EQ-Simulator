@@ -199,6 +199,7 @@ func (asrs *ASRS) AsrsSimulator() {
 
 			}
 		}
+		asrs.Time = time.Now()
 		time.Sleep(5 * time.Second)
 	}
 }
