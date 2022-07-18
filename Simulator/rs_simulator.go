@@ -81,6 +81,7 @@ func (asrs *ASRS) request_mcs(mission_status Models.Mission) {
 func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 	asrs.Status = "RUN"
 	asrs.mux.Lock()
+	alarm_count := 0
 	for {
 		rand.Seed(time.Now().UnixNano())
 		randomNum := Util.Random(1, 5)
@@ -90,7 +91,7 @@ func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 				mission.Status = 2
 			}
 		default:
-			if mission.Status != 4 {
+			if mission.Status != 4 || asrs.Status == "RUN" {
 				switch randomNum {
 				case 1:
 					mission.Status = 1
@@ -99,17 +100,25 @@ func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 				case 3:
 					mission.Status = 3
 				case 4:
-					mission.Status = 4
+					if alarm_count <= 2 {
+						mission.Status = 4
+						asrs.Type = fmt.Sprintf("%s - ALARM", mission.MissionID)
+						asrs.Status = "ALARM"
+						asrs.request_alarm_mcs()
+						alarm_count += 1
+					}
 				}
 			}
+			fmt.Printf("%s,%d\n", mission.MissionID, mission.Status)
 			asrs.request_mcs(mission)
 			if mission.Status == 3 {
 				asrs.Status = "IDLE"
+				fmt.Printf("%s,Complete\n", mission.MissionID)
 				asrs.mux.Unlock()
 				return
 			}
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -153,12 +162,11 @@ func (asrs *ASRS) AsrsSimulator() {
 		if len(asrs.Mission) > 0 && !Util.MutexLocked(&asrs.mux) {
 			mission := asrs.Mission[0]
 			asrs.Mission = asrs.Mission[1:]
-
 			go asrs.asrsmissionsimulator(mission)
 		}
 		if asrs.Status != "RUN" {
 			rand.Seed(time.Now().UnixNano())
-			randomNum := Util.Random(1, 3)
+			// randomNum := Util.Random(1, 3)
 			select {
 			case command := <-asrs.Control:
 				switch command.Type {
@@ -172,21 +180,25 @@ func (asrs *ASRS) AsrsSimulator() {
 					asrs.DeleteMission(command.MissionID)
 				case "DELETE":
 					asrs.DeleteMission(command.MissionID)
+				case "BUG_ALARM":
+					asrs.Status = "BUG_ALARM"
+					asrs.Type = fmt.Sprintf("%s - ALARM", command.MissionID)
+				case "RESOLVE":
+					if asrs.Status == "ALARM" {
+						asrs.Type = ""
+						asrs.Status = "RUN"
+					} else {
+						asrs.Type = ""
+						asrs.Status = "RESOLVE_ALARM"
+					}
 				}
 			default:
-				if asrs.Status != "MAINTAIN" {
-					switch randomNum {
-					case 1:
-						asrs.Status = "IDLE"
-					case 2:
-						asrs.request_alarm_mcs()
-						asrs.Status = "ALARM"
-					}
+				if !(asrs.Status == "MAINTAIN" || asrs.Status == "ALARM") {
+					asrs.Status = "IDLE"
 				}
 
 			}
 		}
-		asrs.Time = time.Now()
 		time.Sleep(5 * time.Second)
 	}
 }

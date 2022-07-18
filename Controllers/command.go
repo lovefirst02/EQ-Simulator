@@ -28,3 +28,26 @@ func SendCommand(c *gin.Context) {
 		"Description": "傳送指令成功",
 	})
 }
+
+//////////////////////////////Lifter///////////////////////////////////
+
+func LifterSendCommand(c *gin.Context) {
+	var command Models.LiterControl
+
+	err := c.ShouldBindJSON(&command)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Code":        1,
+			"Description": err.Error(),
+		})
+		return
+	}
+	if lifter, ok := Global.Lifter[command.LifterID]; ok {
+		lifter.LifterControl(command)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"Code":        0,
+		"Description": "傳送指令成功",
+	})
+}

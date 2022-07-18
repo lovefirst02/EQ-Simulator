@@ -17,26 +17,47 @@ func InitRouter() {
 		{
 			api.HEAD("check", Controllers.Api_Check)
 		}
+	}
 
-		api.Group("asrs/mission")
+	asrs := api.Group("asrs")
+	{
+		asrs.Group("mission")
 		{
-			api.POST("asrs/mission", Controllers.Mission)
-			api.GET("asrs/mission", Controllers.MissionQuantity)
+			asrs.POST("mission", Controllers.Mission)
+			asrs.GET("mission", Controllers.MissionQuantity)
 		}
-
-		api.Group("asrs/status")
+		asrs.Group("status")
 		{
-			api.POST("asrs/status", Controllers.Status)
+			asrs.POST("status", Controllers.Status)
 		}
-
-		api.Group("asrs/private/mission")
+		asrs.Group("/private/mission")
 		{
-			api.PUT("asrs/private/mission", Controllers.MissionPriveteControl)
+			asrs.PUT("private/mission", Controllers.MissionPriveteControl)
 		}
-
-		api.Group("asrs/command")
+		asrs.Group("command")
 		{
-			api.POST("asrs/command", Controllers.SendCommand)
+			asrs.POST("command", Controllers.SendCommand)
+		}
+	}
+
+	lifter := api.Group("lifter")
+	{
+		lifter.Group("mission")
+		{
+			lifter.POST("mission", Controllers.LifterMission)
+			lifter.GET("mission", Controllers.LifterMissionQuantity)
+		}
+		lifter.Group("status")
+		{
+			lifter.POST("status", Controllers.LifterStatus)
+		}
+		lifter.Group("/private/mission")
+		{
+			lifter.PUT("private/mission", Controllers.LifterMissionPriveteControl)
+		}
+		lifter.Group("command")
+		{
+			lifter.POST("command", Controllers.LifterSendCommand)
 		}
 	}
 	router.Run(fmt.Sprintf(":%s", Global.Port))
