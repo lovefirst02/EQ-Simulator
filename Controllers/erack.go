@@ -44,6 +44,11 @@ func ErackInstall(c *gin.Context) {
 			"Code":        0,
 			"Description": "成功",
 		})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Code":        1,
+			"Description": "Not Found Erack",
+		})
 	}
 }
 
@@ -58,7 +63,14 @@ func ErackUnInstall(c *gin.Context) {
 		})
 	}
 	if Erack, ok := Global.Erack[Detail.ErackID]; ok {
-		Erack.Uninstall(Detail.Storage)
+		err := Erack.Uninstall(Detail.Storage)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Code":        1,
+				"Description": err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"Code":        0,
 			"Description": "成功",
@@ -82,7 +94,14 @@ func ErackPre(c *gin.Context) {
 		})
 	}
 	if Erack, ok := Global.Erack[Detail.ErackID]; ok {
-		Erack.PreStorage(Detail.Storage)
+		err := Erack.PreStorage(Detail.Storage)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"Code":        1,
+				"Description": err.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"Code":        0,
 			"Description": "成功",

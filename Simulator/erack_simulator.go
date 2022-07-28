@@ -89,7 +89,7 @@ func (erack *ERACK) Install(Storage, CarrierID string) error {
 	return nil
 }
 
-func (erack *ERACK) Uninstall(Storage string) {
+func (erack *ERACK) Uninstall(Storage string) error {
 	if data, ok := erack.Storage[Storage]; ok {
 		if data.Status == Install {
 			data.CarrierID = ""
@@ -98,17 +98,23 @@ func (erack *ERACK) Uninstall(Storage string) {
 			erack.Storage[Storage] = data
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Uninstall))
 		}
+	} else {
+		return errors.New("No Storage")
 	}
+	return nil
 }
 
-func (erack *ERACK) PreStorage(Storage string) {
+func (erack *ERACK) PreStorage(Storage string) error {
 	if data, ok := erack.Storage[Storage]; ok {
 		if data.Status != Pre && data.Status != Install {
 			data.Status = Pre
 			erack.Storage[Storage] = data
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Pre))
 		}
+	} else {
+		return errors.New("No Storage")
 	}
+	return nil
 }
 
 func (erack *ERACK) ErackSimulator() {
