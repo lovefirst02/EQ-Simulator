@@ -32,14 +32,18 @@ func init() {
 
 func main() {
 	for i := 0; i < Global.EQcount; i++ {
-		AsrsID := fmt.Sprintf("Asrs%d", i+1)
-		LifterID := fmt.Sprintf("Lifter%d", i+1)
+		AsrsID := fmt.Sprintf("ASRS%d", i+1)
+		LifterID := fmt.Sprintf("LIFTER%d", i+1)
+		ErackID := fmt.Sprintf("ERACK%d", i+1)
 		Asrs := Simulator.NewAsrs(AsrsID)
 		Liter := Simulator.NewLifter(LifterID)
+		Erack := Simulator.NewErack(ErackID, 2, 5)
 		Global.Asrs[AsrsID] = Asrs
 		Global.Lifter[LifterID] = Liter
+		Global.Erack[ErackID] = Erack
 		go Asrs.AsrsSimulator()
 		go Liter.LifterSimulator()
+		go Erack.ErackSimulator()
 	}
 	Router.InitRouter()
 }

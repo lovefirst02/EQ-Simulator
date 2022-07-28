@@ -58,6 +58,32 @@ func (lifter *LIFTER) request_alarm_mcs() {
 
 }
 
+func (lifter *LIFTER) report_mcs(Device, DeviceLocation, CarrierID string, Event int) {
+	client := &http.Client{}
+	data := Models.EVENT{
+		Device:          Device,
+		Device_Location: DeviceLocation,
+		CarrierID:       CarrierID,
+		Event:           Event,
+	}
+	json_data, _ := json.Marshal(data)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/eq/report", viper.GetString("MCS")), bytes.NewBuffer(json_data))
+	req.SetBasicAuth("admin", "motorcon")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		_, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (lifter *LIFTER) request_mcs(mission_status Models.LifterMission) {
 	client := &http.Client{}
 	stauts_JSON, _ := json.Marshal(mission_status)
@@ -78,13 +104,47 @@ func (lifter *LIFTER) request_mcs(mission_status Models.LifterMission) {
 	}
 }
 
+func (lifter *LIFTER) request_status_mcs(ID, status, Type string, time time.Time) {
+	client := &http.Client{}
+	status_model := &Models.LifterStatus{
+		LifterID: ID,
+		Type:     Type,
+		Status:   status,
+		Time:     time,
+	}
+	stauts_JSON, _ := json.Marshal(status_model)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/lifter/device/status", viper.GetString("MCS")), bytes.NewBuffer(stauts_JSON))
+	req.SetBasicAuth("admin", "motorcon")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		_, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (lifter *LIFTER) liftermissionsimulator(mission Models.LifterMission) {
 	lifter.Status = "RUN"
 	lifter.mux.Lock()
 	alarm_count := 0
+	run_count := 0
+	max_random := 5
+	// init_count := 0
+	mission.Status = 1
+	lifter.report_mcs(lifter.LifterID, lifter.LifterID, mission.CarrierID, mission.Status)
 	for {
+		if alarm_count >= 2 {
+			max_random = 4
+		}
 		rand.Seed(time.Now().UnixNano())
-		randomNum := Util.Random(1, 5)
+		randomNum := Util.Random(1, max_random)
 		select {
 		case msg := <-mission.Control:
 			if msg == "RESOLVE" {
@@ -94,24 +154,31 @@ func (lifter *LIFTER) liftermissionsimulator(mission Models.LifterMission) {
 			if mission.Status != 4 || lifter.Status == "RUN" {
 				switch randomNum {
 				case 1:
-					mission.Status = 1
+					// if init_count < 1 {
+					// 	mission.Status = 1
+					// 	init_count = init_count + 1
+					// }
 				case 2:
 					mission.Status = 2
+					run_count = run_count + 1
 				case 3:
-					mission.Status = 3
+					if run_count >= 2 {
+						mission.Status = 3
+					}
 				case 4:
 					if alarm_count <= 2 {
 						mission.Status = 4
 						lifter.Type = fmt.Sprintf("%s - ALARM", mission.MissionID)
+						// lifter.request_alarm_mcs()
 						lifter.Status = "ALARM"
-						lifter.request_alarm_mcs()
-						alarm_count += 1
+						alarm_count = alarm_count + 1
 					}
 				}
 			}
-			fmt.Printf("%s,%d\n", mission.MissionID, mission.Status)
-			lifter.request_mcs(mission)
-			if mission.Status == 3 {
+			fmt.Printf("%s,%s,%s,%d\n", mission.MissionID, lifter.LifterID, lifter.Status, mission.Status)
+			// lifter.request_mcs(mission)
+			lifter.report_mcs(lifter.LifterID, lifter.LifterID, mission.CarrierID, mission.Status)
+			if mission.Status == 3 && run_count >= 2 {
 				lifter.Status = "IDLE"
 				fmt.Printf("%s,Complete\n", mission.MissionID)
 				lifter.mux.Unlock()
@@ -153,6 +220,7 @@ func (lifter *LIFTER) LifterMissionPrivateControl(Control Models.LifterMissionPr
 }
 
 func (lifter *LIFTER) LifterMission(mission Models.LifterMission) {
+	fmt.Println(mission)
 	lifter.Mission = append(lifter.Mission, mission)
 }
 
@@ -208,6 +276,7 @@ func (lifter *LIFTER) LifterSimulator() {
 			}
 		}
 		lifter.Time = time.Now()
+		// lifter.request_status_mcs(lifter.LifterID, lifter.Status, lifter.Type, lifter.Time)
 		time.Sleep(5 * time.Second)
 	}
 }

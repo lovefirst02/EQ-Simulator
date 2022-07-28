@@ -9,6 +9,13 @@ type Marshaler interface {
 	MarshalJSON() ([]byte, error)
 }
 
+type EVENT struct {
+	Device          string `json:"Device"`
+	Device_Location string `json:"Device_Location"`
+	CarrierID       string `json:"CarrierID"`
+	Event           int    `json:"Event"`
+}
+
 type Control struct {
 	AsrsID    string `json:"AsrsID"`
 	Type      string `json:"Type"`
@@ -26,7 +33,7 @@ type Mission struct {
 	Sourceport string      `json:"Sourceport"`
 	Destport   string      `json:"Destport"`
 	CarrierID  string      `json:"CarrierID"`
-	Priority   string      `json:"Priority"`
+	Priority   int         `json:"Priority"`
 	Quantity   int         `json:"Quantity"`
 	AsrsID     string      `json:"AsrsID"`
 	Status     int         `json:"Status"`
@@ -75,7 +82,7 @@ type LifterMission struct {
 	Sourceport string      `json:"Sourceport"`
 	Destport   string      `json:"Destport"`
 	CarrierID  string      `json:"CarrierID"`
-	Priority   string      `json:"Priority"`
+	Priority   int         `json:"Priority"`
 	Quantity   int         `json:"Quantity"`
 	LifterID   string      `json:"LifterID"`
 	Status     int         `json:"Status"`
@@ -104,4 +111,11 @@ func (lifter *LifterStatus) MarshalJSON() ([]byte, error) {
 		Alias: (*Alias)(lifter),
 		Time:  lifter.Time.Format("2006-01-02 15:04:05"),
 	})
+}
+
+//////////////////////////ERACK////////////////////////////
+type ErackStorage struct {
+	ErackID   string `json:"ErackID"`
+	CarrierID string `json:"CarrierID"`
+	Storage   string `json:"Storage"`
 }

@@ -52,7 +52,7 @@ func MissionQuantity(c *gin.Context) {
 }
 
 func Mission(c *gin.Context) {
-	var Mission Models.Mission
+	var Mission *Models.Mission
 
 	err := c.ShouldBindJSON(&Mission)
 	if err != nil {
@@ -64,7 +64,7 @@ func Mission(c *gin.Context) {
 	}
 	if Asrs, ok := Global.Asrs[Mission.AsrsID]; ok {
 		Mission.Control = make(chan string)
-		Asrs.AsrsMission(Mission)
+		Asrs.AsrsMission(*Mission)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"simulator/Models"
 	"simulator/Util"
+	"strings"
 	"sync"
 	"time"
 
@@ -78,13 +79,96 @@ func (asrs *ASRS) request_mcs(mission_status Models.Mission) {
 	}
 }
 
+func (asrs *ASRS) request_erack(Device, Storage, Carrier string) {
+	client := &http.Client{}
+	data := Models.ErackStorage{
+		ErackID:   Device,
+		CarrierID: Carrier,
+		Storage:   Storage,
+	}
+	json_data, _ := json.Marshal(data)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/device/api/erack/install", "http://127.0.0.1:8880"), bytes.NewBuffer(json_data))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		_, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func (asrs *ASRS) report_mcs(Device, DeviceLocation, CarrierID string, Event int) {
+	client := &http.Client{}
+	data := Models.EVENT{
+		Device:          Device,
+		Device_Location: DeviceLocation,
+		CarrierID:       CarrierID,
+		Event:           Event,
+	}
+	json_data, _ := json.Marshal(data)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/eq/report", viper.GetString("MCS")), bytes.NewBuffer(json_data))
+	req.SetBasicAuth("admin", "motorcon")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		_, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func (asrs *ASRS) request_status_mcs(ID, status, Type string, time time.Time) {
+	client := &http.Client{}
+	status_model := &Models.AsrsStatus{
+		AsrsID: ID,
+		Type:   Type,
+		Status: status,
+		Time:   time,
+	}
+	stauts_JSON, _ := json.Marshal(status_model)
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/api/rs/device/status", viper.GetString("MCS")), bytes.NewBuffer(stauts_JSON))
+	req.SetBasicAuth("admin", "motorcon")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		_, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+	}
+}
+
 func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 	asrs.Status = "RUN"
 	asrs.mux.Lock()
 	alarm_count := 0
+	run_count := 0
+	max_random := 5
+	mission.Status = 1
+	asrs.report_mcs(asrs.AsrsID, asrs.AsrsID, mission.CarrierID, mission.Status)
 	for {
+		if alarm_count >= 2 {
+			max_random = 4
+		}
 		rand.Seed(time.Now().UnixNano())
-		randomNum := Util.Random(1, 5)
+		randomNum := Util.Random(1, max_random)
 		select {
 		case msg := <-mission.Control:
 			if msg == "RESOLVE" {
@@ -94,24 +178,32 @@ func (asrs *ASRS) asrsmissionsimulator(mission Models.Mission) {
 			if mission.Status != 4 || asrs.Status == "RUN" {
 				switch randomNum {
 				case 1:
-					mission.Status = 1
+					// mission.Status = 1
 				case 2:
 					mission.Status = 2
+					run_count = run_count + 1
 				case 3:
-					mission.Status = 3
+					if run_count >= 2 {
+						mission.Status = 3
+					}
 				case 4:
 					if alarm_count <= 2 {
 						mission.Status = 4
 						asrs.Type = fmt.Sprintf("%s - ALARM", mission.MissionID)
-						asrs.Status = "ALARM"
 						asrs.request_alarm_mcs()
+						asrs.Status = "ALARM"
 						alarm_count += 1
 					}
 				}
 			}
-			fmt.Printf("%s,%d\n", mission.MissionID, mission.Status)
+			fmt.Printf("%s,%s,%s,%d\n", mission.MissionID, asrs.AsrsID, asrs.Status, mission.Status)
 			asrs.request_mcs(mission)
-			if mission.Status == 3 {
+			asrs.report_mcs(asrs.AsrsID, asrs.AsrsID, mission.CarrierID, mission.Status)
+			if mission.Status == 3 && run_count >= 2 {
+				if strings.Contains(mission.Destport, "ERACK") {
+					DestPort_split := strings.Split(mission.Destport, "-")
+					asrs.request_erack(DestPort_split[0], fmt.Sprintf("%s-%s", DestPort_split[1], DestPort_split[2]), mission.CarrierID)
+				}
 				asrs.Status = "IDLE"
 				fmt.Printf("%s,Complete\n", mission.MissionID)
 				asrs.mux.Unlock()
@@ -153,6 +245,7 @@ func (asrs *ASRS) AsrsMissionPrivateControl(Control Models.MissionPrivateControl
 }
 
 func (asrs *ASRS) AsrsMission(mission Models.Mission) {
+	fmt.Println(mission)
 	asrs.Mission = append(asrs.Mission, mission)
 }
 
@@ -200,6 +293,7 @@ func (asrs *ASRS) AsrsSimulator() {
 			}
 		}
 		asrs.Time = time.Now()
+		asrs.request_status_mcs(asrs.AsrsID, asrs.Status, asrs.Type, asrs.Time)
 		time.Sleep(5 * time.Second)
 	}
 }
