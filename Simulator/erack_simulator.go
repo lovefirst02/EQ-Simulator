@@ -35,7 +35,9 @@ type StorageDetail struct {
 type StorageStatus int
 
 func (erack *ERACK) report_mcs(Device, DeviceLocation, CarrierID string, Event int) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Millisecond,
+	}
 	data := Models.EVENT{
 		Device:          Device,
 		Device_Location: DeviceLocation,
@@ -84,7 +86,7 @@ func (erack *ERACK) Install(Storage, CarrierID string) error {
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Install))
 		}
 	} else {
-		return errors.New("No Storage")
+		return errors.New("no storage")
 	}
 	return nil
 }
@@ -99,7 +101,7 @@ func (erack *ERACK) Uninstall(Storage string) error {
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Uninstall))
 		}
 	} else {
-		return errors.New("No Storage")
+		return errors.New("no storage")
 	}
 	return nil
 }
@@ -112,14 +114,14 @@ func (erack *ERACK) PreStorage(Storage string) error {
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Pre))
 		}
 	} else {
-		return errors.New("No Storage")
+		return errors.New("no storage")
 	}
 	return nil
 }
 
 func (erack *ERACK) ErackSimulator() {
 	for {
-
+		time.Sleep(5 * time.Second)
 	}
 }
 
