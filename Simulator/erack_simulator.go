@@ -63,7 +63,7 @@ func (erack *ERACK) report_mcs(Device, DeviceLocation, CarrierID string, Event i
 }
 
 func (erack *ERACK) init(col int, row int) {
-	erack.Storage = make(map[string]StorageDetail)
+	erack.Storage = make(map[string]StorageDetail, row*col)
 	for i := 0; i < col; i++ {
 		for x := 0; x < row; x++ {
 			storage := fmt.Sprintf("%d-%d", i+1, x+1)
@@ -109,6 +109,8 @@ func (erack *ERACK) Uninstall(Storage string) error {
 func (erack *ERACK) PreStorage(Storage string) error {
 	if data, ok := erack.Storage[Storage]; ok {
 		if data.Status != Pre && data.Status != Install {
+			data.CarrierID = "Pre"
+			data.InstallTime = time.Now().Format("2006-01-02 15:04:05")
 			data.Status = Pre
 			erack.Storage[Storage] = data
 			erack.report_mcs(erack.ErackID, Storage, data.CarrierID, int(Pre))
@@ -117,6 +119,16 @@ func (erack *ERACK) PreStorage(Storage string) error {
 		return errors.New("no storage")
 	}
 	return nil
+}
+
+func (erack *ERACK) CheckEmptyStorage() []string {
+	result := make([]string, 0, len(erack.Storage))
+	for k, v := range erack.Storage {
+		if !(v.Status == Install || v.Status == Pre) {
+			result = append(result, k)
+		}
+	}
+	return result
 }
 
 func (erack *ERACK) ErackSimulator() {

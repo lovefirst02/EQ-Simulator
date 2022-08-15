@@ -41,6 +41,7 @@ func InitRouter() {
 		erack.POST("install", Controllers.ErackInstall)
 		erack.POST("uninstall", Controllers.ErackUnInstall)
 		erack.POST("pre", Controllers.ErackPre)
+		erack.POST("empty", Controllers.GetErackEmptyStorage)
 	}
 	router.Run(fmt.Sprintf(":%s", Global.Port))
 }
